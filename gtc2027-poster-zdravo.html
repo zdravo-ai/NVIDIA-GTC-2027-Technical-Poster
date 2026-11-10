@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pre-Execution Authorization of AI-Agent Tool Calls</title>
+<style>
+  @page { size: 43in 24in; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --ink: #101828; --mute: #475467; --rule: #D0D5DD;
+    --navy: #14275A; --blue: #1F4FBF; --pale: #EEF3FD;
+    --green: #17803D; --greenbg: #E7F5EC; --red: #B42318; --redbg: #FDECEA;
+    --amber: #B45309; --amberbg: #FEF3E2;
+  }
+  html, body { width: 43in; height: 24in; background: #fff; }
+  body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; }
+  /* 1in white margin: design area is 41in x 22in */
+  .poster { position: absolute; left: 1in; top: 1in; width: 41in; height: 22in;
+    display: flex; flex-direction: column; gap: 0.25in; }
+
+  header { height: 2.55in; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 0.06in solid var(--navy); padding-bottom: 0.15in; }
+  header .t { flex: 1; text-align: center; padding: 0 0.4in; }
+  h1 { font-size: 66pt; line-height: 1.05; font-weight: 800; color: var(--navy); letter-spacing: -0.5pt; }
+  .sub { font-size: 31pt; color: var(--mute); margin-top: 0.1in; font-weight: 500; }
+  .auth { width: 6.6in; font-size: 22pt; line-height: 1.3; border: 2px solid var(--rule); padding: 0.14in 0.2in; }
+  .auth b { font-size: 26pt; color: var(--navy); display: block; }
+  .auth.l { text-align: left; }
+
+  .cols { flex: 1; display: grid; grid-template-columns: 9.2in 12in 9.6in 9.2in; gap: 0.25in; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 0.22in; min-height: 0; }
+  section { border: 2px solid var(--rule); display: flex; flex-direction: column; min-height: 0; }
+  section.grow { flex: 1; }
+  h2 { background: var(--navy); color: #fff; font-size: 36pt; font-weight: 700; padding: 0.06in 0.2in; letter-spacing: 0.2pt; }
+  .body { padding: 0.13in 0.22in 0.15in; font-size: 24pt; line-height: 1.28; }
+  .body p { margin-bottom: 0.09in; }
+  .body ul { list-style: none; }
+  .body li { padding-left: 0.3in; position: relative; margin-bottom: 0.07in; }
+  .body li::before { content: ""; position: absolute; left: 0.04in; top: 0.16in; width: 0.13in; height: 0.13in; background: var(--blue); }
+  h3 { font-size: 27pt; color: var(--blue); margin: 0.08in 0 0.05in; font-weight: 700; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 0.88em; background: var(--pale); padding: 0 4pt; }
+  b { font-weight: 700; }
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: "Segoe UI", Arial, sans-serif; }
+  .cap { font-size: 19pt; color: var(--mute); line-height: 1.25; margin-top: 0.05in; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 20pt; }
+  th { background: var(--pale); text-align: left; padding: 3pt 7pt; color: var(--navy); border-bottom: 2px solid var(--blue); }
+  td { padding: 3pt 7pt; border-bottom: 1px solid var(--rule); vertical-align: top; line-height: 1.2; }
+  .ok { color: var(--green); font-weight: 700; } .no { color: var(--red); font-weight: 700; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 0.1in; margin-bottom: 0.1in; }
+  .kpi { background: var(--pale); border-left: 0.08in solid var(--blue); padding: 0.06in 0.16in; }
+  .kpi .n { font-size: 40pt; font-weight: 800; color: var(--navy); line-height: 1.05; }
+  .kpi .d { font-size: 18pt; color: var(--mute); line-height: 1.2; }
+  .cols .col:nth-child(3) table { font-size: 23pt; } .cols .col:nth-child(3) td, .cols .col:nth-child(3) th { padding: 5pt 8pt; }
+  .warn { background: var(--amberbg); border-left: 0.08in solid var(--amber); padding: 0.07in 0.16in; font-size: 21pt; line-height: 1.25; margin-top: 0.08in; }
+  .refs { font-size: 15.5pt; line-height: 1.22; padding: 0.1in 0.2in 0.12in; }
+  .refs li { margin-bottom: 3pt; padding-left: 0.22in; }
+  .refs li::before { width: 0.09in; height: 0.09in; top: 0.1in; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+<header>
+  <div class="auth l"><b>Zdravo</b>AI agent governance research</div>
+  <div class="t">
+    <h1>Pre-Execution Authorization of AI-Agent Tool Calls</h1>
+    <div class="sub">Single-use, action-bound permits and a hash-chained receipt ledger, with GPU-aware inference routing</div>
+  </div>
+  <div class="auth"><b>Shqiprim Balazoski</b>shqiprim@zdravo.ai<br>Measured on a live deployment, 7-day window to 9 Nov 2026</div>
+</header>
+
+<div class="cols">
+
+<!-- ============ COLUMN 1 ============ -->
+<div class="col">
+  <section>
+    <h2>1. Problem and Goal</h2>
+    <div class="body">
+      <p>LLM agents call tools (databases, payments, CRMs) through protocols such as the Model Context Protocol. Most deployments check permissions <b>once at login</b> or <b>after the fact</b> in logs.</p>
+      <p>A tool call can be changed, replayed, or made on stale information between approval and execution.</p>
+      <p><b>Goal:</b> decide every call <i>before</i> it runs, bind the decision to that exact call, and leave evidence a third party can verify without trusting the server.</p>
+      <ul>
+        <li>Deny by default; fail closed on any error</li>
+        <li>One decision permits one action, once</li>
+        <li>Every outcome is independently verifiable</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Threat Model</h2>
+    <div class="body">
+      <p>The agent is untrusted. We test eight attacker moves between approval and execution:</p>
+      <table>
+        <tr><th>#</th><th>Attacker move</th><th>Control</th></tr>
+        <tr><td>1</td><td>Alter the tool after approval</td><td>Definition integrity</td></tr>
+        <tr><td>2</td><td>Use an ungranted capability</td><td>Capability grant</td></tr>
+        <tr><td>3</td><td>Act on expired evidence</td><td>Freshness ≤ 30 s</td></tr>
+        <tr><td>4</td><td>Omit required evidence</td><td>Freshness required</td></tr>
+        <tr><td>5</td><td>Request prohibited action</td><td>Org policy</td></tr>
+        <tr><td>6</td><td>Forge the timestamp</td><td>Timestamp validation</td></tr>
+        <tr><td>7</td><td>Replay a valid request</td><td>Idempotency binding</td></tr>
+        <tr><td>8</td><td>Use a revoked delegation</td><td>Delegation check</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="grow">
+    <h2>3. Contributions</h2>
+    <div class="body">
+      <ul>
+        <li>A fail-closed <b>authorize</b> step with six ordered checks before any side effect</li>
+        <li>A <b>permit</b> bound to a hash of the action, an audience, and a 120 s expiry, consumed atomically</li>
+        <li>An append-only, <b>hash-chained</b> audit log with signed receipts</li>
+        <li>A <b>live, reproducible</b> evidence harness, with its failures reported</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- ============ COLUMN 2 ============ -->
+<div class="col">
+  <section style="flex:1.18">
+    <h2>4. Method: Authorize, Permit, Execute, Receipt</h2>
+    <div class="body">
+      <svg viewBox="0 0 1140 640" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="ar" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#14275A"/></marker></defs>
+        <!-- agent -->
+        <rect x="6" y="90" width="150" height="130" rx="8" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="3"/>
+        <text x="81" y="136" font-size="27" font-weight="700" text-anchor="middle" fill="#14275A">Agent</text>
+        <text x="81" y="168" font-size="21" text-anchor="middle" fill="#475467">(untrusted</text>
+        <text x="81" y="194" font-size="21" text-anchor="middle" fill="#475467">MCP client)</text>
+        <line x1="158" y1="155" x2="214" y2="155" stroke="#14275A" stroke-width="4" marker-end="url(#ar)"/>
+        <text x="186" y="125" font-size="19" text-anchor="middle" fill="#475467">intent</text>
+        <!-- authorize -->
+        <rect x="218" y="10" width="380" height="440" rx="10" fill="#fff" stroke="#14275A" stroke-width="4"/>
+        <rect x="218" y="10" width="380" height="48" rx="8" fill="#14275A"/>
+        <text x="408" y="44" font-size="28" font-weight="700" text-anchor="middle" fill="#fff">authorize (fail-closed)</text>
+        <g font-size="23" fill="#101828">
+          <rect x="236" y="72"  width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="106"><tspan font-weight="700" fill="#1F4FBF">1</tspan>  Tool definition unchanged</text>
+          <rect x="236" y="132" width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="166"><tspan font-weight="700" fill="#1F4FBF">2</tspan>  Capability granted</text>
+          <rect x="236" y="192" width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="226"><tspan font-weight="700" fill="#1F4FBF">3</tspan>  Evidence fresh (≤ 30 s)</text>
+          <rect x="236" y="252" width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="286"><tspan font-weight="700" fill="#1F4FBF">4</tspan>  Org policy (default deny)</text>
+          <rect x="236" y="312" width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="346"><tspan font-weight="700" fill="#1F4FBF">5</tspan>  Idempotency key binding</text>
+          <rect x="236" y="372" width="344" height="52" rx="6" fill="#EEF3FD"/><text x="250" y="406"><tspan font-weight="700" fill="#1F4FBF">6</tspan>  Delegation not revoked</text>
+        </g>
+        <text x="408" y="442" font-size="18" text-anchor="middle" fill="#475467">any failure → deny + receipt</text>
+        <!-- deny -->
+        <line x1="408" y1="452" x2="408" y2="512" stroke="#B42318" stroke-width="4" marker-end="url(#ar)"/>
+        <rect x="258" y="514" width="300" height="60" rx="8" fill="#FDECEA" stroke="#B42318" stroke-width="3"/>
+        <text x="408" y="553" font-size="26" font-weight="700" text-anchor="middle" fill="#B42318">DENY: not executed</text>
+        <!-- permit -->
+        <line x1="600" y1="230" x2="652" y2="230" stroke="#17803D" stroke-width="4" marker-end="url(#ar)"/>
+        <text x="626" y="206" font-size="19" text-anchor="middle" fill="#17803D">all pass</text>
+        <rect x="656" y="110" width="270" height="240" rx="10" fill="#E7F5EC" stroke="#17803D" stroke-width="4"/>
+        <text x="791" y="152" font-size="28" font-weight="700" text-anchor="middle" fill="#17803D">Permit</text>
+        <g font-size="21" fill="#101828" text-anchor="middle">
+          <text x="791" y="192">SHA-256(action)</text>
+          <text x="791" y="224">audience</text>
+          <text x="791" y="256">expires in 120 s</text>
+          <text x="791" y="288">single use</text>
+          <text x="791" y="326" font-size="18" fill="#475467">issued to one agent</text>
+        </g>
+        <line x1="928" y1="230" x2="980" y2="230" stroke="#14275A" stroke-width="4" marker-end="url(#ar)"/>
+        <!-- executor -->
+        <rect x="984" y="140" width="150" height="180" rx="8" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="3"/>
+        <text x="1059" y="194" font-size="25" font-weight="700" text-anchor="middle" fill="#14275A">Tool</text>
+        <text x="1059" y="226" font-size="21" text-anchor="middle" fill="#475467">consume</text>
+        <text x="1059" y="254" font-size="21" text-anchor="middle" fill="#475467">permit,</text>
+        <text x="1059" y="282" font-size="21" text-anchor="middle" fill="#475467">then run</text>
+        <!-- ledger -->
+        <line x1="1059" y1="322" x2="1059" y2="392" stroke="#14275A" stroke-width="4" marker-end="url(#ar)"/>
+        <line x1="791" y1="352" x2="791" y2="392" stroke="#14275A" stroke-width="4" marker-end="url(#ar)"/>
+        <line x1="408" y1="574" x2="408" y2="590" stroke="#14275A" stroke-width="0"/>
+        <rect x="640" y="396" width="494" height="240" rx="10" fill="#fff" stroke="#14275A" stroke-width="4"/>
+        <text x="887" y="436" font-size="26" font-weight="700" text-anchor="middle" fill="#14275A">Append-only audit chain</text>
+        <g>
+          <rect x="656" y="462" width="136" height="64" rx="6" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="2.5"/><text x="724" y="490" font-size="20" text-anchor="middle">event n-1</text><text x="724" y="514" font-size="17" text-anchor="middle" fill="#475467" class="mono">h(n-1)</text>
+          <line x1="794" y1="494" x2="826" y2="494" stroke="#14275A" stroke-width="3" marker-end="url(#ar)"/>
+          <rect x="830" y="462" width="136" height="64" rx="6" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="2.5"/><text x="898" y="490" font-size="20" text-anchor="middle">event n</text><text x="898" y="514" font-size="17" text-anchor="middle" fill="#475467">h(n-1 ‖ e)</text>
+          <line x1="968" y1="494" x2="1000" y2="494" stroke="#14275A" stroke-width="3" marker-end="url(#ar)"/>
+          <rect x="1004" y="462" width="116" height="64" rx="6" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="2.5" stroke-dasharray="6 4"/><text x="1062" y="500" font-size="20" text-anchor="middle">n+1</text>
+        </g>
+        <text x="887" y="572" font-size="21" text-anchor="middle" fill="#101828">Signed receipt per decision</text>
+        <text x="887" y="602" font-size="19" text-anchor="middle" fill="#475467">verifiable offline with the public key</text>
+        <text x="887" y="626" font-size="17" text-anchor="middle" fill="#475467">(Cloud KMS, asymmetric signing)</text>
+        <!-- deny to ledger -->
+        <path d="M 558 544 L 624 544 L 624 560 L 640 560" fill="none" stroke="#B42318" stroke-width="3.5" marker-end="url(#ar)"/>
+      </svg>
+      <div class="cap">Figure 1. Every call passes six checks. A pass yields a permit bound to a hash of the exact action. The tool consumes the permit atomically before running. Allow and deny both write a receipt.</div>
+
+      <h3>Permit lifecycle, as exercised end to end</h3>
+      <svg viewBox="0 0 1140 250" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="110" x2="1080" y2="110" stroke="#14275A" stroke-width="5"/>
+        <g font-size="22" text-anchor="middle">
+          <circle cx="110" cy="110" r="22" fill="#17803D"/><text x="110" y="62" font-weight="700">Issue</text><text x="110" y="168" font-size="19" fill="#475467">allow decision</text><text x="110" y="192" font-size="19" fill="#475467">permit, 120 s TTL</text>
+          <circle cx="390" cy="110" r="22" fill="#B42318"/><text x="390" y="62" font-weight="700">Tampered action</text><text x="390" y="168" font-size="19" fill="#B42318" font-weight="700">HTTP 403</text><text x="390" y="192" font-size="19" fill="#475467">action_mismatch</text>
+          <circle cx="670" cy="110" r="22" fill="#17803D"/><text x="670" y="62" font-weight="700">Consume</text><text x="670" y="168" font-size="19" fill="#475467">atomic, once</text><text x="670" y="192" font-size="19" fill="#475467">tool executes</text>
+          <circle cx="950" cy="110" r="22" fill="#B42318"/><text x="950" y="62" font-weight="700">Replay</text><text x="950" y="168" font-size="19" fill="#B42318" font-weight="700">HTTP 409</text><text x="950" y="192" font-size="19" fill="#475467">permit_consumed</text>
+        </g>
+        <text x="570" y="236" font-size="19" text-anchor="middle" fill="#475467">Run 9 Nov 2026 against the live deployment; offline permit and receipt validation both returned valid.</text>
+      </svg>
+    </div>
+  </section>
+
+  <section style="flex:0.82">
+    <h2>5. Benchmarking Methods</h2>
+    <div class="body">
+      <ul>
+        <li><b>Adversarial lab:</b> 8 attacks plus 2 legitimate controls (before and after), driven through the production UI with a headless browser on 13 Oct 2026. The executor was <b>simulated</b>; denials and signed receipts are real, external side effects are not tested.</li>
+        <li><b>Permit proof:</b> one scripted allow, tamper, consume, replay sequence on 9 Nov 2026 with a synthetic tool.</li>
+        <li><b>SLO probe:</b> read-only queries over metric rows and the audit table for the 7 days before 9 Nov 2026; latency is measured inside the handler (no network, no cold start).</li>
+        <li><b>Regression:</b> 4,590 of 4,593 unit and integration tests pass; 3 are skipped.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- ============ COLUMN 3 ============ -->
+<div class="col">
+  <section style="flex:none">
+    <h2>6. Application of NVIDIA Technology</h2>
+    <div class="body">
+      <p><b>Policy decisions are deterministic code and database queries; no GPU is in the decision path.</b> NVIDIA hardware is used for the local-inference side of the agent workload.</p>
+      <svg viewBox="0 0 880 470" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a2" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#14275A"/></marker></defs>
+        <rect x="8" y="12" width="250" height="150" rx="9" fill="#E7F5EC" stroke="#17803D" stroke-width="3.5"/>
+        <text x="133" y="52" font-size="25" font-weight="700" text-anchor="middle" fill="#17803D">NVIDIA GPU host</text>
+        <g font-size="20" text-anchor="middle" fill="#101828"><text x="133" y="88"><tspan class="mono">nvidia-smi</tspan> query:</text><text x="133" y="114">util, temp, memory</text><text x="133" y="140">(NVML)</text></g>
+        <line x1="260" y1="86" x2="318" y2="86" stroke="#14275A" stroke-width="4" marker-end="url(#a2)"/>
+        <rect x="322" y="12" width="270" height="150" rx="9" fill="#EEF3FD" stroke="#1F4FBF" stroke-width="3.5"/>
+        <text x="457" y="52" font-size="25" font-weight="700" text-anchor="middle" fill="#14275A">Routing score</text>
+        <g font-size="20" text-anchor="middle" fill="#101828"><text x="457" y="88">offload if util ≥ 85 %</text><text x="457" y="114">or temp ≥ 82 °C</text><text x="457" y="140">or VRAM too small</text></g>
+        <line x1="594" y1="60" x2="646" y2="40" stroke="#14275A" stroke-width="4" marker-end="url(#a2)"/>
+        <line x1="594" y1="112" x2="646" y2="132" stroke="#14275A" stroke-width="4" marker-end="url(#a2)"/>
+        <rect x="650" y="10" width="222" height="76" rx="8" fill="#E7F5EC" stroke="#17803D" stroke-width="3"/><text x="761" y="42" font-size="22" font-weight="700" text-anchor="middle">Local model</text><text x="761" y="68" font-size="18" text-anchor="middle" fill="#475467">Ollama, GPU-reserved</text>
+        <rect x="650" y="92" width="222" height="76" rx="8" fill="#FEF3E2" stroke="#B45309" stroke-width="3"/><text x="761" y="124" font-size="22" font-weight="700" text-anchor="middle">Cloud model</text><text x="761" y="150" font-size="18" text-anchor="middle" fill="#475467">overflow path</text>
+        <rect x="8" y="215" width="864" height="240" rx="9" fill="#fff" stroke="#D0D5DD" stroke-width="3"/>
+        <text x="30" y="254" font-size="24" font-weight="700" fill="#14275A">What is and is not evidenced</text>
+        <g font-size="21">
+          <text x="30" y="294" fill="#17803D" font-weight="700">Implemented</text><text x="230" y="294">GPU telemetry via <tspan class="mono">nvidia-smi</tspan>; routing thresholds</text>
+          <text x="30" y="328" fill="#17803D" font-weight="700">Implemented</text><text x="230" y="328">Compose file reserves one NVIDIA GPU for Ollama</text>
+          <text x="30" y="362" fill="#B42318" font-weight="700">Not measured</text><text x="230" y="362">Throughput or latency on NVIDIA hardware</text>
+          <text x="30" y="396" fill="#B42318" font-weight="700">Not measured</text><text x="230" y="396">Effect of GPU load on routing outcomes</text>
+          <text x="30" y="430" fill="#B45309" font-weight="700">Not used</text><text x="230" y="430">NIM, Triton, TensorRT-LLM (candidates, Sec. 9)</text>
+        </g>
+      </svg>
+      <div class="cap">Figure 2. The router reads GPU state and picks local or cloud inference. All results in Section 7 were taken on a deployment with no NVIDIA accelerator in the path.</div>
+    </div>
+  </section>
+
+  <section style="flex:1">
+    <h2>7a. Results: Adversarial Lab</h2>
+    <div class="body">
+      <table>
+        <tr><th>Step</th><th>Outcome</th><th>Denial reason (from receipt)</th></tr>
+        <tr><td>Control</td><td class="ok">allow</td><td>Permitted by policy</td></tr>
+        <tr><td>1 Change tool</td><td class="no">deny</td><td>Definition changed; re-approval required</td></tr>
+        <tr><td>2 No grant</td><td class="no">deny</td><td>Agent not authorized for capability</td></tr>
+        <tr><td>3 Stale</td><td class="no">deny</td><td>Evidence 301 s old; max 30 s</td></tr>
+        <tr><td>4 No evidence</td><td class="no">deny</td><td>Required evidence not supplied</td></tr>
+        <tr><td>5 Prohibited</td><td class="no">deny</td><td>Export prohibited by org policy</td></tr>
+        <tr><td>6 Forged time</td><td class="no">deny</td><td>Missing or future timestamp</td></tr>
+        <tr><td>7 Replay</td><td class="no">deny</td><td>Idempotency key already used</td></tr>
+        <tr><td>8 Revoked</td><td class="no">deny</td><td>Delegation revoked</td></tr>
+        <tr><td>Control</td><td class="ok">allow</td><td>Tool restored; signed delegation</td></tr>
+      </table>
+      <div class="cap">8 of 8 attacks blocked; the legitimate action succeeded before and after. Simulated executor, production decision path, 13 Oct 2026.</div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ COLUMN 4 ============ -->
+<div class="col">
+  <section style="flex:1.45">
+    <h2>7b. Results: Live Measurements</h2>
+    <div class="body">
+      <div class="kpis">
+        <div class="kpi"><div class="n">8 / 8</div><div class="d">attacks blocked, controls allowed</div></div>
+        <div class="kpi"><div class="n">0 / 963</div><div class="d">HTTP 5xx over 7 days</div></div>
+        <div class="kpi"><div class="n">1,106</div><div class="d">audit events, 21 orgs, 0 chain breaks*</div></div>
+        <div class="kpi"><div class="n">403 · 409</div><div class="d">tamper and replay rejected</div></div>
+      </div>
+      <h3>Latency against objectives (ms, log scale)</h3>
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg">
+        <g font-size="19" fill="#475467">
+          <line x1="250" y1="20" x2="250" y2="330" stroke="#98A2B3" stroke-width="2"/>
+          <line x1="250" y1="330" x2="860" y2="330" stroke="#98A2B3" stroke-width="2"/>
+          <!-- log axis: 10 -> 250, 1000 -> 800 ; x = 250 + (log10(v)-1)*275 -->
+          <line x1="250" y1="20" x2="250" y2="330" stroke="#E4E7EC"/><text x="250" y="356" text-anchor="middle">10</text>
+          <line x1="525" y1="20" x2="525" y2="330" stroke="#E4E7EC"/><text x="525" y="356" text-anchor="middle">100</text>
+          <line x1="800" y1="20" x2="800" y2="330" stroke="#E4E7EC"/><text x="800" y="356" text-anchor="middle">1000</text>
+        </g>
+        <g font-size="21" text-anchor="end" fill="#101828">
+          <text x="240" y="62">HTTP p95</text><text x="240" y="132">HTTP p99</text><text x="240" y="202">Policy p99</text><text x="240" y="272">Policy target</text>
+        </g>
+        <!-- p95 566.9 -> x=250+(2.7535-1)*275=732 ; p99 815.6 -> 250+(2.9115-1)*275=776 ; 190.3 -> 250+(2.2794-1)*275=602 ; 20 -> 250+(1.301-1)*275=333 -->
+        <rect x="250" y="38" width="482" height="38" fill="#1F4FBF"/><text x="742" y="66" font-size="21" font-weight="700" fill="#101828">567</text>
+        <rect x="250" y="108" width="526" height="38" fill="#1F4FBF"/><text x="786" y="136" font-size="21" font-weight="700" fill="#101828">816</text>
+        <rect x="250" y="178" width="352" height="38" fill="#B45309"/><text x="612" y="206" font-size="21" font-weight="700" fill="#101828">190</text>
+        <rect x="250" y="248" width="83" height="38" fill="#17803D"/><text x="343" y="276" font-size="21" font-weight="700" fill="#101828">20</text>
+        <text x="560" y="392" font-size="17" text-anchor="middle" fill="#475467">HTTP: n = 963 requests. Policy: n = 2 decisions, includes DB writes.</text>
+      </svg>
+      <div class="warn"><b>The policy-latency target was missed:</b> p99 190 ms against 20 ms. With n = 2 this is an upper bound, not a distribution.</div>
+      <div class="cap">*4 breaks are on record as accepted. 18 signatures were created under the integration suite's stub key and are not counted as verified.</div>
+    </div>
+  </section>
+
+  <section style="flex:0.55">
+    <h2>8. Limitations and 9. Next Steps</h2>
+    <div class="body" style="font-size:20pt">
+      <ul>
+        <li><b>Open failures:</b> 3 data-deletion-worker SLO checks fail (no job has ever run), and 1 of 8 scheduled-work objectives failed (85 of 92 scheduler calls returned 2xx; the target is 99 %).</li>
+        <li><b>Low load:</b> peak 9 decisions per minute per organization.</li>
+        <li><b>Simulated executor</b> in the attack lab.</li>
+        <li><b>Next:</b> benchmark authorize and routing on an NVIDIA GPU host (same harness, p50/p95/p99 under load); evaluate a GPU-served model as an evidence classifier; compare NIM and local serving.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="font-size:30pt">References</h2>
+    <ul class="body refs">
+      <li>Saltzer and Schroeder, "The Protection of Information in Computer Systems," Proc. IEEE 63(9), 1975.</li>
+      <li>Schneier and Kelsey, "Secure Audit Logs to Support Computer Forensics," ACM TISSEC 2(2), 1999.</li>
+      <li>Rose et al., NIST SP 800-207, <i>Zero Trust Architecture</i>, 2020.</li>
+      <li>Josefsson and Liusvaara, RFC 8032: EdDSA, 2017.</li>
+      <li>Model Context Protocol specification, modelcontextprotocol.io.</li>
+      <li>NVIDIA Management Library (NVML) and <span class="mono">nvidia-smi</span> documentation; NVIDIA Container Toolkit documentation.</li>
+    </ul>
+  </section>
+</div>
+
+</div>
+</div>
+</body>
+</html>
